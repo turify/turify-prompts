@@ -1,0 +1,11 @@
+{
+  "buildCommand": "next build",
+  "installCommand": "pnpm install && pnpm exec prisma generate --no-engine",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 10
+    }
+  }
+} 

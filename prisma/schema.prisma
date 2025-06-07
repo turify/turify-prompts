@@ -1,0 +1,237 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id
+  name          String?
+  email         String    @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  passwordHash  String?   @map("password_hash")
+  passwordSalt  String?   @map("password_salt")
+  role          String    @default("user")
+  
+  // Premium Membership
+  isPremium         Boolean   @default(false) @map("is_premium")
+  premiumExpiresAt  DateTime? @map("premium_expires_at")
+  premiumType       String?   @map("premium_type") // "blog_promotion", "paid", etc.
+  
+  // User preferences
+  emailNotifications Boolean @default(true) @map("email_notifications")
+  pushNotifications  Boolean @default(true) @map("push_notifications")
+  theme             String  @default("system") // "light", "dark", "system"
+  language          String  @default("English") // "English", "Spanish", "French", "German"
+  country           String  @default("United States") // User's country for locale-aware prompts
+  preferences       Json?   // JSON field for prompt variables like {{target_audience}}, {{product_name}}, etc.
+  
+  // Two-Factor Authentication
+  twoFactorEnabled  Boolean @default(false) @map("two_factor_enabled")
+  twoFactorSecret   String? @map("two_factor_secret")
+  backupCodes       String[] @map("backup_codes")
+  
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+  
+  accounts  Account[]
+  sessions  Session[]
+  prompts   Prompt[]
+  favorites Favorite[]
+  analytics Analytics[]
+  blogSubmissions BlogSubmission[]
+  
+  @@map("users")
+}
+
+model Account {
+  id                Int     @id @default(autoincrement())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refreshToken      String? @map("refresh_token")
+  accessToken       String? @map("access_token")
+  expiresAt         BigInt? @map("expires_at")
+  tokenType         String? @map("token_type")
+  scope             String?
+  idToken           String? @map("id_token")
+  sessionState      String? @map("session_state")
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           Int      @id @default(autoincrement())
+  userId       String   @map("user_id")
+  expires      DateTime
+  sessionToken String   @unique @map("session_token")
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+  
+  @@id([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Prompt {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  promptText  String   @map("prompt_text")
+  description String?
+  industry    String?
+  score       Int?
+  isPublic    Boolean  @default(true) @map("is_public")
+  userId      String?  @map("user_id")
+  impressions Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+  
+  user                     User?                    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  versions                 PromptVersion[]
+  evaluations              PromptEvaluation[]
+  outputs                  PromptOutput[]
+  improvementSuggestions   ImprovementSuggestion[]
+  favorites                Favorite[]
+  analytics                Analytics[]
+  
+  @@map("prompts")
+}
+
+model PromptVersion {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  promptId      String   @map("prompt_id") @db.Uuid
+  versionNumber Int      @map("version_number")
+  promptText    String   @map("prompt_text")
+  score         Int?
+  createdAt     DateTime @default(now()) @map("created_at")
+  
+  prompt                 Prompt                  @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  evaluations            PromptEvaluation[]
+  outputs                PromptOutput[]
+  improvementSuggestions ImprovementSuggestion[]
+  
+  @@unique([promptId, versionNumber])
+  @@map("prompt_versions")
+}
+
+model PromptEvaluation {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  promptId           String   @map("prompt_id") @db.Uuid
+  versionId          String?  @map("version_id") @db.Uuid
+  clarityScore       Int?     @map("clarity_score")
+  specificityScore   Int?     @map("specificity_score")
+  contextualScore    Int?     @map("contextual_score")
+  effectivenessScore Int?     @map("effectiveness_score")
+  feedback           Json?
+  createdAt          DateTime @default(now()) @map("created_at")
+  
+  prompt  Prompt         @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  version PromptVersion? @relation(fields: [versionId], references: [id], onDelete: SetNull)
+  
+  @@map("prompt_evaluations")
+}
+
+model PromptOutput {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  promptId   String   @map("prompt_id") @db.Uuid
+  versionId  String?  @map("version_id") @db.Uuid
+  outputText String   @map("output_text")
+  createdAt  DateTime @default(now()) @map("created_at")
+  
+  prompt  Prompt         @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  version PromptVersion? @relation(fields: [versionId], references: [id], onDelete: SetNull)
+  
+  @@map("prompt_outputs")
+}
+
+model ImprovementSuggestion {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  promptId   String   @map("prompt_id") @db.Uuid
+  versionId  String?  @map("version_id") @db.Uuid
+  section    String?
+  priority   String?
+  suggestion String
+  createdAt  DateTime @default(now()) @map("created_at")
+  
+  prompt  Prompt         @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  version PromptVersion? @relation(fields: [versionId], references: [id], onDelete: SetNull)
+  
+  @@map("improvement_suggestions")
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id")
+  promptId  String   @map("prompt_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt Prompt @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, promptId])
+  @@map("favorites")
+}
+
+model Analytics {
+  id        Int      @id @default(autoincrement())
+  eventType String   @map("event_type")
+  eventData Json?    @map("event_data")
+  userId    String?  @map("user_id")
+  promptId  String?  @map("prompt_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  prompt Prompt? @relation(fields: [promptId], references: [id], onDelete: SetNull)
+  
+  @@map("analytics")
+}
+
+model BlogSubmission {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  blogUrl     String   @map("blog_url")
+  articleUrl  String   @map("article_url")
+  title       String
+  description String?
+  status      String   @default("pending") // "pending", "approved", "rejected"
+  reviewNotes String?  @map("review_notes")
+  submittedAt DateTime @default(now()) @map("submitted_at")
+  reviewedAt  DateTime? @map("reviewed_at")
+  reviewedBy  String?  @map("reviewed_by")
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("blog_submissions")
+}
+
+model EmailUnsubscribe {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email         String   @unique
+  campaignType  String   @default("early_access") @map("campaign_type") // "early_access", "newsletter", "product_updates", etc.
+  reason        String?  // Optional reason for unsubscribing
+  unsubscribedAt DateTime @default(now()) @map("unsubscribed_at")
+  
+  @@map("email_unsubscribes")
+}
