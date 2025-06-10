@@ -1,4 +1,7 @@
 import { requireAdmin } from "@/app/actions/auth-actions"
+
+// Force this page to be dynamic due to authentication
+export const dynamic = 'force-dynamic'
 import { BlogSubmissionsAdmin } from "./BlogSubmissionsAdmin"
 
 export const metadata = {

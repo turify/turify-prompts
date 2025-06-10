@@ -34,44 +34,54 @@ export const authOptions: NextAuthOptions = {
       return true
     },
     async jwt({ token, user, account }) {
-      if (user) {
-        token.id = user.id
-        // Get user role from database for existing users
-        if (account?.provider === "google") {
-          const dbUser = await prisma.user.findUnique({
-            where: { email: user.email! },
-          })
-          token.role = dbUser?.role || "user"
-          token.twoFactorEnabled = dbUser?.twoFactorEnabled || false
-          // Mark that this is a fresh OAuth login that needs 2FA verification if enabled
-          if (dbUser?.twoFactorEnabled) {
-            token.needsOAuth2FA = true
-            token.oauth2FATimestamp = Date.now()
+      try {
+        if (user) {
+          token.id = user.id
+          // Get user role from database for existing users
+          if (account?.provider === "google") {
+            const dbUser = await prisma.user.findUnique({
+              where: { email: user.email! },
+            })
+            token.role = dbUser?.role || "user"
+            token.twoFactorEnabled = dbUser?.twoFactorEnabled || false
+            // Mark that this is a fresh OAuth login that needs 2FA verification if enabled
+            if (dbUser?.twoFactorEnabled) {
+              token.needsOAuth2FA = true
+              token.oauth2FATimestamp = Date.now()
+            }
+          } else {
+            token.role = (user as any).role || "user"
           }
-        } else {
-          token.role = (user as any).role || "user"
         }
+        
+        // Clear needsOAuth2FA flag after 1 minute (60000ms) to allow for 2FA completion
+        // This prevents infinite redirects while giving time for 2FA verification
+        if (token.needsOAuth2FA && token.oauth2FATimestamp && 
+            (Date.now() - (token.oauth2FATimestamp as number)) > 60000) {
+          token.needsOAuth2FA = false
+          delete token.oauth2FATimestamp
+        }
+        
+        return token
+      } catch (error) {
+        console.warn("JWT callback error:", error)
+        return token
       }
-      
-      // Clear needsOAuth2FA flag after 1 minute (60000ms) to allow for 2FA completion
-      // This prevents infinite redirects while giving time for 2FA verification
-      if (token.needsOAuth2FA && token.oauth2FATimestamp && 
-          (Date.now() - (token.oauth2FATimestamp as number)) > 60000) {
-        token.needsOAuth2FA = false
-        delete token.oauth2FATimestamp
-      }
-      
-      return token
     },
     async session({ session, token }) {
-      if (token && session.user) {
-        (session.user as any).id = token.id as string;
-        (session.user as any).role = token.role as string;
-        // Safely access token properties with proper type checking
-        (session.user as any).twoFactorEnabled = !!(token as any).twoFactorEnabled;
-        (session.user as any).needsOAuth2FA = !!(token as any).needsOAuth2FA;
+      try {
+        if (token && session.user) {
+          (session.user as any).id = token.id as string;
+          (session.user as any).role = token.role as string;
+          // Safely access token properties with proper type checking
+          (session.user as any).twoFactorEnabled = !!(token as any).twoFactorEnabled;
+          (session.user as any).needsOAuth2FA = !!(token as any).needsOAuth2FA;
+        }
+        return session;
+      } catch (error) {
+        console.warn("Session callback error:", error)
+        return session;
       }
-      return session;
     },
   },
   events: {

@@ -1,6 +1,9 @@
 import { AdminUsersList } from "@/components/admin/admin-users-list"
 import { requireAdmin } from "@/app/actions/auth-actions"
 
+// Force this page to be dynamic due to authentication
+export const dynamic = 'force-dynamic'
+
 export default async function AdminUsersPage() {
   // Check if user is admin
   await requireAdmin()

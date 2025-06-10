@@ -3,6 +3,9 @@ import { CommunitySection } from "@/components/community-section"
 import { Footer } from "@/components/footer"
 import { getCurrentUser } from "@/app/actions/auth-actions"
 
+// Force this page to be dynamic due to cookie usage
+export const dynamic = 'force-dynamic'
+
 export default async function Home() {
   const user = await getCurrentUser()
   const userId = user?.id

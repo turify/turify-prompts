@@ -51,41 +51,48 @@ export async function getCurrentUser(): Promise<User | null> {
           pushNotifications: user.pushNotifications,
           theme: user.theme,
           language: user.language,
-          country: user.country,
+          country: user.country || undefined,
           twoFactorEnabled: user.twoFactorEnabled,
           isPremium: user.isPremium,
-          premiumExpiresAt: user.premiumExpiresAt,
-          premiumType: user.premiumType,
+          premiumExpiresAt: user.premiumExpiresAt?.toISOString(),
+          premiumType: user.premiumType || undefined,
         }
       }
     }
 
     // If no custom session, check for NextAuth session (OAuth)
-    const nextAuthSession = await getNextAuthSession(authOptions)
-    
-    if (nextAuthSession?.user?.email) {
-      const user = await prisma.user.findUnique({
-        where: { email: nextAuthSession.user.email },
-      })
+    // Wrap in try-catch to handle JWT decryption errors gracefully
+    try {
+      const nextAuthSession = await getNextAuthSession(authOptions)
+      
+      if (nextAuthSession?.user?.email) {
+        const user = await prisma.user.findUnique({
+          where: { email: nextAuthSession.user.email },
+        })
 
-      if (user) {
-        return {
-          id: user.id,
-          name: user.name || "",
-          email: user.email,
-          image: user.image || undefined,
-          role: user.role,
-          emailNotifications: user.emailNotifications,
-          pushNotifications: user.pushNotifications,
-          theme: user.theme,
-          language: user.language,
-          country: user.country,
-          twoFactorEnabled: user.twoFactorEnabled,
-          isPremium: user.isPremium,
-          premiumExpiresAt: user.premiumExpiresAt,
-          premiumType: user.premiumType,
+        if (user) {
+          return {
+            id: user.id,
+            name: user.name || "",
+            email: user.email,
+            image: user.image || undefined,
+            role: user.role,
+            emailNotifications: user.emailNotifications,
+            pushNotifications: user.pushNotifications,
+            theme: user.theme,
+            language: user.language,
+                       country: user.country || undefined,
+           twoFactorEnabled: user.twoFactorEnabled,
+           isPremium: user.isPremium,
+           premiumExpiresAt: user.premiumExpiresAt?.toISOString(),
+           premiumType: user.premiumType || undefined,
+          }
         }
       }
+    } catch (jwtError: any) {
+      // Log JWT errors but don't throw - this handles corrupted JWT tokens gracefully
+      console.warn("JWT session error (likely corrupted token):", jwtError.message)
+      // Continue execution - user will be treated as not authenticated
     }
 
     return null

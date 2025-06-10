@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { PremiumBadge } from "@/components/premium-badge"
-import { User, Settings, LogOut, LayoutDashboard, Menu, X } from "lucide-react"
+import { User, Settings, LogOut, LayoutDashboard, Menu, X, Github, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function Navbar() {
@@ -83,6 +83,28 @@ export function Navbar() {
           
           {/* Desktop Menu */}
           <div className="hidden sm:ml-6 sm:flex sm:items-center gap-4">
+            {/* Social Links */}
+            <div className="flex items-center gap-2">
+              <a 
+                href="https://discord.gg/wbXhARAPvK" 
+                className="inline-flex items-center space-x-2 px-4 py-2 text-muted-foreground hover:text-foreground rounded-lg font-medium transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MessageCircle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                <span className="text-sm">Discord</span>
+              </a>
+              <a 
+                href="https://github.com/turify" 
+                className="inline-flex items-center space-x-2 px-4 py-2 text-muted-foreground hover:text-foreground rounded-lg font-medium transition-colors"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Github className="w-4 h-4" />
+                <span className="text-sm">GitHub</span>
+              </a>
+            </div>
+            
             <ThemeToggle />
             {loading ? (
               <div className="text-muted-foreground">Loading...</div>
@@ -230,6 +252,30 @@ export function Navbar() {
                   )}
                 </>
               )}
+              
+              {/* Mobile Social Links */}
+              <div className="flex flex-col gap-2 pl-3 pr-4 py-2">
+                <a 
+                  href="https://discord.gg/wbXhARAPvK" 
+                  className="group inline-flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transform hover:scale-105 shadow-md hover:shadow-blue-500/25"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <MessageCircle className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+                  <span>Join Our Discord</span>
+                </a>
+                <a 
+                  href="https://github.com/turify" 
+                  className="inline-flex items-center space-x-3 px-4 py-3 text-muted-foreground hover:text-foreground rounded-lg font-medium transition-colors"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Github className="w-5 h-5" />
+                  <span>Explore GitHub</span>
+                </a>
+              </div>
             </div>
             
             {/* Mobile User Menu */}

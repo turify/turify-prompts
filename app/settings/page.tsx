@@ -1,4 +1,7 @@
 import { requireAuth } from "@/app/actions/auth-actions"
+
+// Force this page to be dynamic due to authentication
+export const dynamic = 'force-dynamic'
 import { SettingsForm } from "./settings-form"
 
 export default async function SettingsPage() {

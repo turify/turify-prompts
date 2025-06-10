@@ -1,5 +1,8 @@
 import { requireAuth } from "@/app/actions/auth-actions"
 
+// Force this page to be dynamic due to authentication
+export const dynamic = 'force-dynamic'
+
 export default async function ProfilePage() {
   // Check if user is authenticated
   const user = await requireAuth()

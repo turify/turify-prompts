@@ -1,6 +1,9 @@
 import { AdminAnalyticsDashboard } from "@/components/admin/admin-analytics-dashboard"
 import { requireAdmin } from "@/app/actions/auth-actions"
 
+// Force this page to be dynamic due to authentication
+export const dynamic = 'force-dynamic'
+
 export default async function AdminAnalyticsPage() {
   // Check if user is admin
   await requireAdmin()
